@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import type { Contact } from "@/types/entity"
 import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
 import {bootstrapContacts} from "@/scripts/bootstrapContacts"
@@ -12,22 +12,56 @@ const progressState = ref(0)
 const createAndReload = () => bootstrapContacts(100, progressState).then(() => location.reload())
 const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location.reload())
 
+const filters = reactive<Partial<Omit<Contact, "id">>>({})
+const search = ref('')
+
+watch([filters, search], (state) => {
+    console.log(state)
+    IDBTransactionGetContacts((c: Contact) => c.name.toLowerCase().includes(state[1].toLowerCase()) &&
+        (filters.profession ? c.profession === filters.profession : true) &&
+        (filters.gender ? c.gender === filters.gender : true)
+    )
+        .then(result => contacts.value = result)
+})
+
 </script>
 
 <template>
     <div class="home">
         <div class="left">
-                <div class="search">
-                <input type="text">
+            <div class="search">
+                <div>
+                    <span>Buscar</span>
+                    <input type="text" v-model="search"/>
                 </div>
-                <div class="contact_container">
-                    <div class="contact" v-for="contact in contacts">{{contact.name}} {{contact.number}}</div>
+                <div>
+                    <span>Profesión</span>
+                    <select v-model="filters.profession">
+                        <option>Arquitect</option>
+                        <option>Doctor</option>
+                        <option>Engineer</option>
+                    </select>
                 </div>
+                <div>
+                    <span>Género</span>
+                    <select v-model="filters.gender">
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="contact_container">
+                <div class="contact" v-for="contact in contacts">{{contact.name}} {{contact.number}}</div>
+            </div>
         </div>
         <div class="right">
-            <button @click="createAndReload">Create Contacts</button>
-            <button @click="deleteAndReload">Delete contacts</button>
-            <div v-if="progressState" class="progress">{{progressState}} contactos importados</div>
+            <div>
+                <button @click="createAndReload">Create Contacts</button>
+                <button @click="deleteAndReload">Delete contacts</button>
+                <div v-if="progressState" class="progress">{{progressState}} contactos importados</div>
+            </div>
+            <div></div>
         </div>
     </div>
 </template>
@@ -54,6 +88,8 @@ const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location
     background: lightgreen;
     width: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .contact_container {
@@ -71,6 +107,8 @@ const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location
 
 .search {
     background: grey;
+    display: flex;
+    justify-content: space-between;
 }
 
 .progress {
