@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from "vue";
-import type { Contact } from "@/types/entity"
+import type { Contact } from "@/types/row";
 import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
-import {bootstrapContacts} from "@/scripts/bootstrapContacts"
+import {fillWhatsappDatabaseAndAlterIfNecessary} from "@/indexedDB/resolver"
+import { parseExcel } from "@/utils/parseExcel";
 
 const contacts = ref<Contact[]>([])
 
-onMounted(() => IDBTransactionGetContacts().then(response => contacts.value = response))
+onMounted(() => IDBTransactionGetContacts().then(response => {
+    contacts.value = response
+}))
 const progressState = ref(0)
 
-const createAndReload = () => bootstrapContacts(100, progressState).then(() => location.reload())
+const createAndReload = async () => {
+    const {results, schema} = await parseExcel()
+    await fillWhatsappDatabaseAndAlterIfNecessary(Object.keys(schema), results, progressState)
+    location.reload()
+}
 const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location.reload())
 
 const filters = reactive<Partial<Omit<Contact, "id">>>({})
@@ -17,10 +24,7 @@ const search = ref('')
 
 watch([filters, search], (state) => {
     console.log(state)
-    IDBTransactionGetContacts((c: Contact) => c.name.toLowerCase().includes(state[1].toLowerCase()) &&
-        (filters.profession ? c.profession === filters.profession : true) &&
-        (filters.gender ? c.gender === filters.gender : true)
-    )
+    IDBTransactionGetContacts((c: Contact) => c.name.toLowerCase().includes(state[1].toLowerCase()))
         .then(result => contacts.value = result)
 })
 
@@ -34,22 +38,6 @@ watch([filters, search], (state) => {
                     <span>Buscar</span>
                     <input type="text" v-model="search"/>
                 </div>
-                <div>
-                    <span>Profesión</span>
-                    <select v-model="filters.profession">
-                        <option>Arquitect</option>
-                        <option>Doctor</option>
-                        <option>Engineer</option>
-                    </select>
-                </div>
-                <div>
-                    <span>Género</span>
-                    <select v-model="filters.gender">
-                        <option>Male</option>
-                        <option>Female</option>
-                        <option>Other</option>
-                    </select>
-                </div>
             </div>
             <div class="contact_container">
                 <div class="contact" v-for="contact in contacts">{{contact.name}} {{contact.number}}</div>
@@ -58,7 +46,7 @@ watch([filters, search], (state) => {
         <div class="right">
             <div>
                 <button @click="createAndReload">Create Contacts</button>
-                <button @click="deleteAndReload">Delete contacts</button>
+                <button @click="deleteAndReload">Delete Contacts</button>
                 <div v-if="progressState" class="progress">{{progressState}} contactos importados</div>
             </div>
             <div></div>

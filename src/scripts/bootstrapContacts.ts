@@ -1,5 +1,4 @@
-import {IDBTransactionCreateContact} from "@/indexedDB/queries"
-import type { Contact } from "@/types/entity";
+import type { Contact } from "@/types/row";
 import type { Ref } from "vue";
 
 const names = [
@@ -265,26 +264,21 @@ function generateRandomNumber(n: number) {
   for (let i = 0; i < n; i++) {
     result += Math.floor(Math.random() * 10);
   }
-  return result;
+  return Number(result);
 }
 
-export const bootstrapContacts = (n: number, progressState?: Ref<number>,  current = 0): Promise<any> => {
+export const generateContacts = (n: number, current = 0, results: Contact[] = []): Contact[] => {
     if (current < n) {
         const name = names[Math.floor(Math.random() * names.length)] + " " + names[Math.floor(Math.random() * names.length)]
         const number = generateRandomNumber(10)
         const gender = ['Male', 'Female', 'Other'][Math.floor(Math.random() * 3)] as Contact['gender']
         const profession = ['Arquitect', 'Engineer', 'Doctor'][Math.floor(Math.random() * 3)]
-        return IDBTransactionCreateContact({
+        return generateContacts(n, current + 1, [...results, {
             name,
             number,
             gender,
             profession
-        }).then(() => {
-                if (progressState) progressState.value++
-                return bootstrapContacts(n, progressState, current + 1)
-            })
+        }])
     }
-    else {
-        return Promise.resolve()
-    }
+    return results
 }
