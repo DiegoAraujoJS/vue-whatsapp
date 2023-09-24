@@ -1,5 +1,5 @@
 export type Contact = {
-    name: string
-    number: number
+    nombre: string
+    numero: number
     [k: string]: any
 }

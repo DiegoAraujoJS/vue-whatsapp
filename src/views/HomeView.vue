@@ -2,9 +2,7 @@
 import { onMounted, reactive, ref, watch } from "vue";
 import type { Contact } from "@/types/row";
 import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
-import {fillWhatsappDatabaseAndAlterIfNecessary} from "@/indexedDB/resolver"
-import { parseExcel } from "@/utils/parseExcel";
-
+import ExcelReader from "@/components/ExcelReader.vue";
 const contacts = ref<Contact[]>([])
 
 onMounted(() => IDBTransactionGetContacts().then(response => {
@@ -12,11 +10,11 @@ onMounted(() => IDBTransactionGetContacts().then(response => {
 }))
 const progressState = ref("")
 
-const createAndReload = async () => {
-    const {results, schema} = await parseExcel()
-    await fillWhatsappDatabaseAndAlterIfNecessary(Object.keys(schema), results, progressState)
-    location.reload()
-}
+// const createAndReload = async () => {
+//     const {results, schema} = await parseExcel()
+//     await fillWhatsappDatabaseAndAlterIfNecessary(Object.keys(schema), results, progressState)
+//     location.reload()
+// }
 const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location.reload())
 
 const filters = reactive<Partial<Omit<Contact, "id">>>({})
@@ -40,12 +38,12 @@ watch([filters, search], (state) => {
                 </div>
             </div>
             <div class="contact_container">
-                <div class="contact" v-for="contact in contacts">{{contact.name}} {{contact.number}}</div>
+                <div class="contact" v-for="contact in contacts">{{contact.nombre}} {{contact.numero}}</div>
             </div>
         </div>
         <div class="right">
             <div>
-                <button @click="createAndReload">Create Contacts</button>
+                <ExcelReader/>
                 <button @click="deleteAndReload">Delete Contacts</button>
                 <div v-if="progressState" class="progress">{{progressState}}</div>
             </div>
