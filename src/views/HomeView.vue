@@ -10,7 +10,7 @@ const contacts = ref<Contact[]>([])
 onMounted(() => IDBTransactionGetContacts().then(response => {
     contacts.value = response
 }))
-const progressState = ref(0)
+const progressState = ref("")
 
 const createAndReload = async () => {
     const {results, schema} = await parseExcel()
@@ -47,7 +47,7 @@ watch([filters, search], (state) => {
             <div>
                 <button @click="createAndReload">Create Contacts</button>
                 <button @click="deleteAndReload">Delete Contacts</button>
-                <div v-if="progressState" class="progress">{{progressState}} contactos importados</div>
+                <div v-if="progressState" class="progress">{{progressState}}</div>
             </div>
             <div></div>
         </div>

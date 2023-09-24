@@ -22,7 +22,7 @@ export const resolverIDB = (resolve: (value: IDBDatabase) => void, reject: (valu
 export async function fillWhatsappDatabaseAndAlterIfNecessary(
     keys: string[],
     items: Contact[],
-    progressState?: Ref<number>
+    progressState?: Ref<string>
 ): Promise<void> {
     const dbName = 'Whatsapp';
     const objectStoreName = 'contacts';
@@ -54,9 +54,11 @@ export async function fillWhatsappDatabaseAndAlterIfNecessary(
             const transaction = db.transaction([objectStoreName], 'readwrite');
             const objectStore = transaction.objectStore(objectStoreName);
 
+            let count = 0
             for (const item of items) {
                 objectStore.add(item);
-                progressState ? progressState.value++ : null
+                count++
+                progressState ? progressState.value = `${count} contactos importados` : null
             }
 
             transaction.oncomplete = () => {
@@ -79,6 +81,7 @@ export async function fillWhatsappDatabaseAndAlterIfNecessary(
 
             if (missingIndexes.length > 0) {
                 try {
+                    if (progressState) progressState.value = "Updating database schema"
                     await alterDatabase(db, missingIndexes);
                     const newRequest = indexedDB.open(dbName);
                     newRequest.onsuccess = async newEvent => {
