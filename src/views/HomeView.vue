@@ -22,7 +22,7 @@ const search = ref('')
 
 watch([filters, search], (state) => {
     console.log(state)
-    IDBTransactionGetContacts((c: Contact) => c.name.toLowerCase().includes(state[1].toLowerCase()))
+    IDBTransactionGetContacts((c: Contact) => c.nombre.toLowerCase().includes(state[1].toLowerCase()))
         .then(result => contacts.value = result)
 })
 
@@ -46,6 +46,10 @@ watch([filters, search], (state) => {
                 <ExcelReader/>
                 <button @click="deleteAndReload">Delete Contacts</button>
                 <div v-if="progressState" class="progress">{{progressState}}</div>
+            </div>
+            <div>
+                <textarea name="message" id="message" cols="30" rows="10"></textarea>
+                <button class="send">Enviar</button>
             </div>
             <div></div>
         </div>
@@ -71,7 +75,7 @@ watch([filters, search], (state) => {
 }
 
 .right {
-    background: lightgreen;
+    background: whitesmoke;
     width: 100%;
     height: 100%;
     display: flex;
@@ -79,7 +83,6 @@ watch([filters, search], (state) => {
 }
 
 .contact_container {
-    border: 1px solid red;
     overflow: scroll;
     max-height: 100%;
 }
@@ -99,6 +102,10 @@ watch([filters, search], (state) => {
 
 .progress {
     font-size: 1.25rem;
+}
+
+.send {
+    display: block;
 }
 
 </style>
