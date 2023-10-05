@@ -1,33 +1,3 @@
-<script setup lang="ts">
-import { onMounted, reactive, ref, watch } from "vue";
-import type { Contact } from "@/types/row";
-import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
-import ExcelReader from "@/components/ExcelReader.vue";
-const contacts = ref<Contact[]>([])
-
-onMounted(() => IDBTransactionGetContacts().then(response => {
-    contacts.value = response
-}))
-const progressState = ref("")
-
-// const createAndReload = async () => {
-//     const {results, schema} = await parseExcel()
-//     await fillWhatsappDatabaseAndAlterIfNecessary(Object.keys(schema), results, progressState)
-//     location.reload()
-// }
-const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location.reload())
-
-const filters = reactive<Partial<Omit<Contact, "id">>>({})
-const search = ref('')
-
-watch([filters, search], (state) => {
-    console.log(state)
-    IDBTransactionGetContacts((c: Contact) => c.nombre.toLowerCase().includes(state[1].toLowerCase()))
-        .then(result => contacts.value = result)
-})
-
-</script>
-
 <template>
     <div class="home">
         <div class="left">
@@ -38,7 +8,16 @@ watch([filters, search], (state) => {
                 </div>
             </div>
             <div class="contact_container">
-                <div class="contact" v-for="contact in contacts">{{contact.nombre}} {{contact.numero}}</div>
+                <div class="contact">
+                    <div class="contact_field"> </div>
+                    <div class="contact_field"></div>
+                    <div class="contact_field"></div>
+                </div>
+                <div class="contact" v-for="contact in contacts">
+                    <div class="contact_field"></div>
+                    <div class="contact_field"></div>
+                    <div class="contact_field"></div>
+                </div>
             </div>
         </div>
         <div class="right">
@@ -51,10 +30,34 @@ watch([filters, search], (state) => {
                 <textarea name="message" id="message" cols="30" rows="10"></textarea>
                 <button class="send">Enviar</button>
             </div>
-            <div></div>
         </div>
     </div>
 </template>
+
+<script setup lang="ts">
+import { onMounted, reactive, ref, watch } from "vue";
+import type { Contact } from "@/types/row";
+import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
+import ExcelReader from "@/components/ExcelReader.vue";
+const contacts = ref<Contact[]>([])
+
+onMounted(() => IDBTransactionGetContacts().then(response => {
+    contacts.value = response
+}))
+const progressState = ref("")
+
+const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location.reload())
+
+const filters = reactive<Partial<Omit<Contact, "id">>>({})
+const search = ref('')
+
+watch([filters, search], (state) => {
+    console.log(state)
+    IDBTransactionGetContacts((c: Contact) => c.nombre.toLowerCase().includes(state[1].toLowerCase()))
+        .then(result => contacts.value = result)
+})
+
+</script>
 
 <style scoped>
 .home {
@@ -85,6 +88,8 @@ watch([filters, search], (state) => {
 .contact_container {
     overflow: scroll;
     max-height: 100%;
+    display: grid;
+    grid-template-columns: 1pt 1pt 1pt;
 }
 
 .contact {
@@ -106,6 +111,15 @@ watch([filters, search], (state) => {
 
 .send {
     display: block;
+}
+.columns {
+    display: flex;
+}
+
+.contact_field {
+    border: 1px solid red;
+    height: 20px;
+    width: 80px;
 }
 
 </style>
