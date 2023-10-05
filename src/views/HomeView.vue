@@ -2,23 +2,25 @@
     <div class="home">
         <div class="left">
             <div class="search">
-                <div>
-                    <span>Buscar</span>
-                    <input type="text" v-model="search"/>
+                <div v-for="(value, filter) in filters" class="search-input">
+                    <span>{{filter}}</span>
+                    <input type="text" v-model="filters[filter]"/>
                 </div>
             </div>
-            <div class="contact_container">
-                <div class="contact">
-                    <div class="contact_field"> </div>
-                    <div class="contact_field"></div>
-                    <div class="contact_field"></div>
-                </div>
-                <div class="contact" v-for="contact in contacts">
-                    <div class="contact_field"></div>
-                    <div class="contact_field"></div>
-                    <div class="contact_field"></div>
-                </div>
-            </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="property" v-for="property in properties" :key="property">{{ property }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="contact in contacts" :key="contact.id">
+                            <td v-for="property in properties" :key="property">{{ contact[property] }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            
         </div>
         <div class="right">
             <div>
@@ -35,11 +37,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { Contact } from "@/types/row";
 import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
 import ExcelReader from "@/components/ExcelReader.vue";
 const contacts = ref<Contact[]>([])
+
+const properties = computed(() => {
+    return Object.keys(contacts.value.reduce((acum, current) => {
+        return {...acum, ...current}
+    }, {}))
+})
 
 onMounted(() => IDBTransactionGetContacts().then(response => {
     contacts.value = response
@@ -48,13 +56,37 @@ const progressState = ref("")
 
 const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location.reload())
 
-const filters = reactive<Partial<Omit<Contact, "id">>>({})
-const search = ref('')
+const filters = reactive<Contact>({nombre: "", numero: 0})
 
-watch([filters, search], (state) => {
-    console.log(state)
-    IDBTransactionGetContacts((c: Contact) => c.nombre.toLowerCase().includes(state[1].toLowerCase()))
-        .then(result => contacts.value = result)
+const propertiesDefined = ref(false)
+watch(properties, () => {
+    if (propertiesDefined.value) return 
+    propertiesDefined.value = true
+    for (const prop of properties.value) {
+        filters[prop] = ""
+    }
+})
+
+
+function createPredicate(filters: Contact, keys: (keyof Contact)[]): (c: Contact) => boolean {
+    return (c: Contact) => {
+        for (const key of keys) {
+            if (!c[key].includes(filters[key])) {
+                return false;
+            }
+        }
+        return true;
+    };
+}
+
+watch([filters], (state) => {
+    const nonZeroFilters = Object.keys(filters).filter(k => filters[k]) as unknown as (keyof Contact)[]
+    console.log(nonZeroFilters)
+    IDBTransactionGetContacts(createPredicate(filters, nonZeroFilters))
+        .then(result => {
+            console.log(result)
+            contacts.value = result
+        })
 })
 
 </script>
@@ -85,13 +117,6 @@ watch([filters, search], (state) => {
     flex-direction: column;
 }
 
-.contact_container {
-    overflow: scroll;
-    max-height: 100%;
-    display: grid;
-    grid-template-columns: 1pt 1pt 1pt;
-}
-
 .contact {
     border: 1px solid blue;
     border-radius: 5px;
@@ -105,6 +130,10 @@ watch([filters, search], (state) => {
     justify-content: space-between;
 }
 
+.search-input {
+    display: flex;
+}
+
 .progress {
     font-size: 1.25rem;
 }
@@ -116,10 +145,9 @@ watch([filters, search], (state) => {
     display: flex;
 }
 
-.contact_field {
-    border: 1px solid red;
-    height: 20px;
-    width: 80px;
+.property {
+    text-align: left;
 }
+
 
 </style>
