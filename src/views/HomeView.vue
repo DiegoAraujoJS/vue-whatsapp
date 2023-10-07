@@ -30,7 +30,7 @@
             </div>
             <div>
                 <textarea name="message" id="message" cols="30" rows="10" v-model="message"></textarea>
-                <button class="send" @click="massSendWhatsAppMessage(contacts, message)">Enviar</button>
+                <button class="send" @click="handleSendMessage">Enviar</button>
             </div>
         </div>
     </div>
@@ -42,6 +42,7 @@ import type { Contact } from "@/types/row";
 import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
 import ExcelReader from "@/components/ExcelReader.vue";
 import {massSendWhatsAppMessage} from "@/utils/whatsApp"
+import Swal from "sweetalert2";
 const contacts = ref<Contact[]>([])
 
 const properties = computed(() => {
@@ -89,6 +90,40 @@ watch([filters], () => {
 })
 
 const message = ref("")
+
+
+function generateTableHTML(properties: string[], contacts: Contact[]): string {
+    let html = '<table>';
+
+    // Generate tbody
+    html += '<tbody>';
+    for (const contact of contacts) {
+        html += `<tr style="text-align:left">`;
+        for (const property of ['nombre', 'numero']) {
+            html += `<td>${contact[property]}</td>`;
+        }
+        html += '</tr>';
+    }
+    html += '</tbody>';
+
+    html += '</table>';
+
+    return html;
+}
+
+const handleSendMessage = (event: Event) => {
+    return Swal.fire({
+        icon: 'warning',
+        html: generateTableHTML(properties.value, contacts.value),
+        showCloseButton: true,
+        showCancelButton: true,
+        focusConfirm: false,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Enviar',
+        cancelButtonText: 'Cancelar'
+    })
+}
 
 </script>
 
