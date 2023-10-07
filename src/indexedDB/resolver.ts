@@ -39,7 +39,7 @@ export async function fillWhatsappDatabaseAndAlterIfNecessary(
                 const objectStore = (event.currentTarget as any).transaction.objectStore(objectStoreName);
 
                 for (const key of missingIndexes) {
-                    objectStore.createIndex(key, key, { unique: false });
+                    objectStore.createIndex(key, key, { unique: key === "numero" ? true : false});
                 }
             };
 
@@ -49,16 +49,38 @@ export async function fillWhatsappDatabaseAndAlterIfNecessary(
     };
 
     // Stage 2: Fill the database with items
-    const fillDatabase = (db: IDBDatabase): Promise<void> => {
-        return new Promise((resolve, reject) => {
+    const fillDatabase = (db: IDBDatabase, index = 0): Promise<void> => {
+        return new Promise(async (resolve, reject) => {
             const transaction = db.transaction([objectStoreName], 'readwrite');
             const objectStore = transaction.objectStore(objectStoreName);
 
+            const numberIdIndex = objectStore.index("numero")
             let count = 0
             for (const item of items) {
-                objectStore.add(item);
-                count++
-                progressState ? progressState.value = `${count} contactos importados` : null
+                console.log(item)
+                // We check that the item is not duplicated before moving forward.
+                const itemExists = await new Promise((res: (v: boolean) => void, rej) => {
+                    console.log("itemExists promise", item)
+                    const getRequest = numberIdIndex.get(item.numero)
+                    let itemExists = false
+                    getRequest.onsuccess = event => {
+                        const retrievedItem: any = (event.target as IDBRequest).result;
+                        console.log("itemExists promise", retrievedItem)
+                        if (retrievedItem) {
+                            console.log("Item duplicated", item);
+                            itemExists = true
+                            res(true)
+                        } else {
+                            res(false)
+                        }
+                    }
+                })
+                console.log(itemExists)
+                if (!itemExists){
+                    objectStore.add(item);
+                    count++
+                    progressState ? progressState.value = `${count} contactos importados` : null
+                }
             }
 
             transaction.oncomplete = () => {

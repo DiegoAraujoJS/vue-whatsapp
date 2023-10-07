@@ -2,9 +2,9 @@
     <div class="home">
         <div class="left">
             <div class="search">
-                <div v-for="(value, filter) in filters" class="search-input">
+                <div v-for="(_, filter) in filters" class="search-input">
                     <span>{{filter}}</span>
-                    <input type="text" v-model="filters[filter]"/>
+                    <input type="text" v-model="filters[filter]" :id="`input_${filter}`"/>
                 </div>
             </div>
 
@@ -29,8 +29,8 @@
                 <div v-if="progressState" class="progress">{{progressState}}</div>
             </div>
             <div>
-                <textarea name="message" id="message" cols="30" rows="10"></textarea>
-                <button class="send">Enviar</button>
+                <textarea name="message" id="message" cols="30" rows="10" v-model="message"></textarea>
+                <button class="send" @click="massSendWhatsAppMessage(contacts, message)">Enviar</button>
             </div>
         </div>
     </div>
@@ -41,12 +41,13 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { Contact } from "@/types/row";
 import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
 import ExcelReader from "@/components/ExcelReader.vue";
+import {massSendWhatsAppMessage} from "@/utils/whatsApp"
 const contacts = ref<Contact[]>([])
 
 const properties = computed(() => {
     return Object.keys(contacts.value.reduce((acum, current) => {
         return {...acum, ...current}
-    }, {}))
+    }, {})).filter(k => k !== "id")
 })
 
 onMounted(() => IDBTransactionGetContacts().then(response => {
@@ -71,7 +72,7 @@ watch(properties, () => {
 function createPredicate(filters: Contact, keys: (keyof Contact)[]): (c: Contact) => boolean {
     return (c: Contact) => {
         for (const key of keys) {
-            if (!c[key].includes(filters[key])) {
+            if (!c[key].toLowerCase().includes(filters[key])) {
                 return false;
             }
         }
@@ -79,15 +80,15 @@ function createPredicate(filters: Contact, keys: (keyof Contact)[]): (c: Contact
     };
 }
 
-watch([filters], (state) => {
+watch([filters], () => {
     const nonZeroFilters = Object.keys(filters).filter(k => filters[k]) as unknown as (keyof Contact)[]
-    console.log(nonZeroFilters)
     IDBTransactionGetContacts(createPredicate(filters, nonZeroFilters))
         .then(result => {
-            console.log(result)
             contacts.value = result
         })
 })
+
+const message = ref("")
 
 </script>
 
