@@ -1,0 +1,10 @@
+.send-message-table {
+    width: 100%;
+}
+.contact-send-status {
+    background: lightgray;
+}
+
+.display-none {
+    display: none !important;
+}

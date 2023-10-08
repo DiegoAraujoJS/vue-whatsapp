@@ -41,8 +41,8 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { Contact } from "@/types/row";
 import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
 import ExcelReader from "@/components/ExcelReader.vue";
-import {massSendWhatsAppMessage} from "@/utils/whatsApp"
 import Swal from "sweetalert2";
+import { massSendWhatsAppMessage } from "@/utils/whatsApp";
 const contacts = ref<Contact[]>([])
 
 const properties = computed(() => {
@@ -58,7 +58,7 @@ const progressState = ref("")
 
 const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location.reload())
 
-const filters = reactive<Contact>({nombre: "", numero: 0})
+const filters = reactive<Contact>({nombre: "", numero: 0, id: 0})
 
 const propertiesDefined = ref(false)
 watch(properties, () => {
@@ -92,16 +92,18 @@ watch([filters], () => {
 const message = ref("")
 
 
-function generateTableHTML(properties: string[], contacts: Contact[]): string {
-    let html = '<table>';
+const okEmoji = "✅"
+function generateTableHTML(contacts: Contact[]): string {
+    let html = '<table class="send-message-table">';
 
     // Generate tbody
     html += '<tbody>';
     for (const contact of contacts) {
-        html += `<tr style="text-align:left">`;
+        html += `<tr style="text-align:left" class="contact-send-status">`;
         for (const property of ['nombre', 'numero']) {
             html += `<td>${contact[property]}</td>`;
         }
+        html += `<td id="status-${contact.id}"></td>`;
         html += '</tr>';
     }
     html += '</tbody>';
@@ -111,17 +113,37 @@ function generateTableHTML(properties: string[], contacts: Contact[]): string {
     return html;
 }
 
-const handleSendMessage = (event: Event) => {
+const handleSendMessage = () => {
     return Swal.fire({
         icon: 'warning',
-        html: generateTableHTML(properties.value, contacts.value),
+        html: generateTableHTML(contacts.value),
         showCloseButton: true,
         showCancelButton: true,
         focusConfirm: false,
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
         confirmButtonText: 'Enviar',
-        cancelButtonText: 'Cancelar'
+        cancelButtonText: 'Cancelar',
+        preConfirm: async () => {
+            Swal.showLoading()
+
+            await new Promise ((res, rej) => setTimeout(() => {res(true)}, 1000))
+            const result = await massSendWhatsAppMessage(contacts.value, message.value, {
+                after(contact) {
+                    const element = document.querySelector(`#status-${contact.id}`)
+                    if (element) element.innerHTML = okEmoji
+                },
+            })
+
+            console.log(result)
+
+            const confirmButton = document.querySelector('.swal2-confirm');
+            const cancelButton = document.querySelector('.swal2-cancel');
+            if (confirmButton) confirmButton.classList.add("display-none")
+            if (cancelButton) cancelButton.classList.add("display-none")
+
+            return false
+        }
     })
 }
 
@@ -184,6 +206,4 @@ const handleSendMessage = (event: Event) => {
 .property {
     text-align: left;
 }
-
-
 </style>
