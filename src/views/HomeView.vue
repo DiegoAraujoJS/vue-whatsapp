@@ -2,9 +2,9 @@
     <div class="home">
         <div class="left">
             <div class="search">
-                <div v-for="(_, filter) in filters" class="search-input">
-                    <span>{{filter}}</span>
-                    <input type="text" v-model="filters[filter]" :id="`input_${filter}`"/>
+                <div v-for="property in properties" class="search-input">
+                    <span>{{property}}</span>
+                    <input type="text" v-model="filters[property]" :id="`input_${property}`"/>
                 </div>
             </div>
 
@@ -42,7 +42,7 @@ import type { Contact } from "@/types/row";
 import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
 import ExcelReader from "@/components/ExcelReader.vue";
 import Swal from "sweetalert2";
-import { massSendWhatsAppMessage, sendWhatsAppMessage } from "@/utils/whatsApp";
+import { sendWhatsAppMessage } from "@/utils/whatsApp";
 const contacts = ref<Contact[]>([])
 
 const properties = computed(() => {
@@ -62,6 +62,7 @@ const filters = reactive<Contact>({nombre: "", numero: 0, id: 0})
 
 const propertiesDefined = ref(false)
 watch(properties, () => {
+    console.log("properties", properties.value, propertiesDefined.value)
     if (propertiesDefined.value) return 
     propertiesDefined.value = true
     for (const prop of properties.value) {
@@ -82,9 +83,12 @@ function createPredicate(filters: Contact, keys: (keyof Contact)[]): (c: Contact
 }
 
 watch([filters], () => {
+    console.log("filters in watch filters", filters)
+    console.log("properties in watch filters", properties.value)
     const nonZeroFilters = Object.keys(filters).filter(k => filters[k]) as unknown as (keyof Contact)[]
     IDBTransactionGetContacts(createPredicate(filters, nonZeroFilters))
         .then(result => {
+            console.log("result in getcontacts", result)
             contacts.value = result
         })
 })
@@ -93,6 +97,7 @@ const message = ref("")
 
 
 const okEmoji = "✅"
+const errorEmoji = "🔴"
 function generateTableHTML(contacts: Contact[]): string {
     let html = '<table class="send-message-table">';
 
@@ -127,15 +132,18 @@ const handleSendMessage = () => {
         preConfirm: async () => {
             Swal.showLoading()
 
-            await new Promise ((res, rej) => setTimeout(() => {res(true)}, 1000))
-            const result = await massSendWhatsAppMessage(contacts.value, message.value, {
-                after(contact) {
+            const result = await Promise.all(contacts.value.map(contact => sendWhatsAppMessage(contact, message.value)
+                .then(() => {
                     const element = document.querySelector(`#status-${contact.id}`)
                     if (element) element.innerHTML = okEmoji
-                },
-            })
-
-            console.log(result)
+                    return true
+                })
+                .catch(() => {
+                    const element = document.querySelector(`#status-${contact.id}`)
+                    if (element) element.innerHTML = errorEmoji
+                    return false
+                })
+            ))
 
             const confirmButton = document.querySelector('.swal2-confirm');
             const cancelButton = document.querySelector('.swal2-cancel');
