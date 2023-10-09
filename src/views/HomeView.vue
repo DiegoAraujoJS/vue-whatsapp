@@ -30,130 +30,48 @@
             </div>
             <div>
                 <textarea name="message" id="message" cols="30" rows="10" v-model="message"></textarea>
-                <button class="send" @click="handleSendMessage">Enviar</button>
+                <button class="send" @click="handleSendMessage(contacts, message)">Enviar</button>
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import type { Contact } from "@/types/row";
 import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
 import ExcelReader from "@/components/ExcelReader.vue";
-import Swal from "sweetalert2";
-import { sendWhatsAppMessage } from "@/utils/whatsApp";
-const contacts = ref<Contact[]>([])
+import { createPredicate } from "@/utils/logic";
+import { handleSendMessage } from "@/utils/handleSendMessage";
 
-const properties = computed(() => {
-    return Object.keys(contacts.value.reduce((acum, current) => {
-        return {...acum, ...current}
-    }, {})).filter(k => k !== "id")
-})
+const contacts = ref<Contact[]>([])
+const properties = ref<string[]>([])
 
 onMounted(() => IDBTransactionGetContacts().then(response => {
     contacts.value = response
+
+    properties.value = Object.keys(response.reduce((acum, current) => {
+        return {...acum, ...current}
+    }, {})).filter(k => k !== "id")
+
+    properties.value.forEach(prop => filters[prop] = "")
 }))
+
 const progressState = ref("")
 
 const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location.reload())
 
 const filters = reactive<Contact>({nombre: "", numero: 0, id: 0})
 
-const propertiesDefined = ref(false)
-watch(properties, () => {
-    console.log("properties", properties.value, propertiesDefined.value)
-    if (propertiesDefined.value) return 
-    propertiesDefined.value = true
-    for (const prop of properties.value) {
-        filters[prop] = ""
-    }
-})
-
-
-function createPredicate(filters: Contact, keys: (keyof Contact)[]): (c: Contact) => boolean {
-    return (c: Contact) => {
-        for (const key of keys) {
-            if (!c[key].toLowerCase().includes(filters[key])) {
-                return false;
-            }
-        }
-        return true;
-    };
-}
-
 watch([filters], () => {
-    console.log("filters in watch filters", filters)
-    console.log("properties in watch filters", properties.value)
     const nonZeroFilters = Object.keys(filters).filter(k => filters[k]) as unknown as (keyof Contact)[]
     IDBTransactionGetContacts(createPredicate(filters, nonZeroFilters))
         .then(result => {
-            console.log("result in getcontacts", result)
             contacts.value = result
         })
 })
 
 const message = ref("")
-
-
-const okEmoji = "✅"
-const errorEmoji = "🔴"
-function generateTableHTML(contacts: Contact[]): string {
-    let html = '<table class="send-message-table">';
-
-    // Generate tbody
-    html += '<tbody>';
-    for (const contact of contacts) {
-        html += `<tr style="text-align:left" class="contact-send-status">`;
-        for (const property of ['nombre', 'numero']) {
-            html += `<td>${contact[property]}</td>`;
-        }
-        html += `<td id="status-${contact.id}"></td>`;
-        html += '</tr>';
-    }
-    html += '</tbody>';
-
-    html += '</table>';
-
-    return html;
-}
-
-const handleSendMessage = () => {
-    return Swal.fire({
-        icon: 'warning',
-        html: generateTableHTML(contacts.value),
-        showCloseButton: true,
-        showCancelButton: true,
-        focusConfirm: false,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Enviar',
-        cancelButtonText: 'Cancelar',
-        preConfirm: async () => {
-            Swal.showLoading()
-
-            const result = await Promise.all(contacts.value.map(contact => sendWhatsAppMessage(contact, message.value)
-                .then(() => {
-                    const element = document.querySelector(`#status-${contact.id}`)
-                    if (element) element.innerHTML = okEmoji
-                    return true
-                })
-                .catch(() => {
-                    const element = document.querySelector(`#status-${contact.id}`)
-                    if (element) element.innerHTML = errorEmoji
-                    return false
-                })
-            ))
-
-            const confirmButton = document.querySelector('.swal2-confirm');
-            const cancelButton = document.querySelector('.swal2-cancel');
-            if (confirmButton) confirmButton.classList.add("display-none")
-            if (cancelButton) cancelButton.classList.add("display-none")
-
-            return false
-        }
-    })
-}
 
 </script>
 
