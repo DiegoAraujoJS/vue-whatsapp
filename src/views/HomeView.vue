@@ -42,7 +42,7 @@ import type { Contact } from "@/types/row";
 import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexedDB/queries"
 import ExcelReader from "@/components/ExcelReader.vue";
 import Swal from "sweetalert2";
-import { massSendWhatsAppMessage } from "@/utils/whatsApp";
+import { massSendWhatsAppMessage, sendWhatsAppMessage } from "@/utils/whatsApp";
 const contacts = ref<Contact[]>([])
 
 const properties = computed(() => {

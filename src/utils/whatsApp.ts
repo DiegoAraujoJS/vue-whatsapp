@@ -3,7 +3,7 @@ import axios from "axios"
 
 type MessageOptionals = {
     preview_url?: boolean
-    after?: (contact: Contact) => void
+    after?: (contact: Contact) => void | Promise<void>
 }
 
 export function sendWhatsAppMessage(to: Contact, message: string, optionals?: MessageOptionals) {
@@ -27,8 +27,13 @@ export function sendWhatsAppMessage(to: Contact, message: string, optionals?: Me
     }
 
     return axios.post(endpoint, messageData, {headers})
-        .then((res) => optionals ? optionals.after ? optionals.after(to) : res : res)
-        .catch((err) => console.log("inside catch of contact " + to.nombre))
+        .then((res) => {
+            if (optionals && optionals.after) {
+                return Promise.resolve(optionals.after(to)).then(() => true)
+            }
+            return true
+        })
+        .catch(err => false)
 }
 
 export function massSendWhatsAppMessage(to: Contact[], message: string, optionals?: MessageOptionals) {
