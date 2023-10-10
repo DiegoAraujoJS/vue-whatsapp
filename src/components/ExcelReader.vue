@@ -1,6 +1,12 @@
 <template>
     <div class="load-contacts">
-        <div>Cargar Contactos</div>
+        <div>
+            <span>Cargar Contactos</span>
+            <button class="info-button" @click="renderInstructions({
+                title: 'Cargar los contactos desde un Excel',
+                instructions: uploadInstructions
+            })">i</button>
+        </div>
         <input class="excel-input" type="file" @change="handleFileUpload" accept=".xlsx,.xls" />
         <button class="button-delete" @click="deleteAndReload">Eliminar Contactos</button>
     </div>
@@ -10,6 +16,7 @@
 import { IDBTransactionDeleteContacts } from '@/indexedDB/queries';
 import { fillWhatsappDatabaseAndAlterIfNecessary } from '@/indexedDB/resolver';
 import type { Contact } from '@/types/row';
+import { renderInstructions } from '@/utils/instructions';
 import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
 const readExcel = (file: File): Promise<Contact[]> => {
@@ -71,6 +78,28 @@ const deleteAndReload = () => Swal.fire({
         }
     })
 
+const uploadInstructions = `El primer paso es cargar contactos. Tenés que cargar un excel en formato .xlsx o .xls con tus contactos organizados de la siguiente manera: <table>
+                    <thead>
+                        <tr>
+                            <th class="property">nombre</th>
+                            <th class="property">numero</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Susana</td>
+                            <td>541175354103</td>
+                        </tr>
+                        <tr>
+                            <td>Jerónimo</td>
+                            <td>541183423721</td>
+                        </tr>
+                    </tbody>
+                </table>
+<br/>
+Debe haber al menos las columnas de nombre y numero para que se puedan cargar los contactos. Además puede haber tantas columnas adicionales como se desee.
+`
+
 </script>
 
 <style scoped>
@@ -92,5 +121,7 @@ const deleteAndReload = () => Swal.fire({
     grid-column: 1;
     grid-row: 2
 }
+
+
 
 </style>

@@ -28,7 +28,13 @@
                 <div v-if="progressState" class="progress">{{progressState}}</div>
                 <div class="message-input">
                     <textarea name="message" id="message" cols="30" rows="10" v-model="message"></textarea>
-                    <button class="send" @click="handleSendMessage(contacts, message)">Enviar</button>
+                    <div class="send">
+                        <button @click="handleSendMessage(contacts, message)">Enviar</button>
+                        <button class="info-button" @click="renderInstructions({
+                            title: 'Enviá mensajes múltiples a tus contactos',
+                            instructions: 'Al tocar \'Enviar\', se va a ir enviando el mensaje que escribiste en el campo a todos los contactos que filtraste a la izquierda. Un ícono a la derecha de cada contacto indica si el envío fue exitoso.'
+                        })">i</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -42,6 +48,7 @@ import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexed
 import ExcelReader from "@/components/ExcelReader.vue";
 import { createPredicate } from "@/utils/logic";
 import { handleSendMessage } from "@/utils/handleSendMessage";
+import { renderInstructions } from "@/utils/instructions";
 
 const contacts = ref<Contact[]>([])
 const properties = ref<string[]>(['nombre', 'numero'])
@@ -121,8 +128,6 @@ const message = ref("")
 }
 
 .send {
-    position: absolute;
-    top: 0;
     margin: 0 5px;
 }
 .columns {
@@ -134,7 +139,6 @@ const message = ref("")
 }
 
 .right {
-    position: relative;
     background: #F9FDFD;
     width: 75%;
     height: 100%;
@@ -145,6 +149,7 @@ const message = ref("")
 
 .message-input {
     position: relative;
+    display: flex;
     top: 10%;
     width: 100%;
 }
