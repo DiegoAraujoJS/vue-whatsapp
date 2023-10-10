@@ -46,7 +46,7 @@ const setupWhatsappVariables =  (contacts: Contact[], message: string): any => S
     didOpen: () => {
         document.getElementById('infoBtnPhoneId')?.addEventListener('click', () => {
             Swal.fire({
-                title: 'Creá una Aplicación en Facebook Developers',
+                title: 'Crear una Aplicación en Facebook Developers',
                 html: `<ul>
   <li><strong>Paso 1: Creá una Aplicación en Facebook Developers</strong>
     <ul>

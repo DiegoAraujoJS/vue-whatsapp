@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <input type="file" @change="handleFileUpload" accept=".xlsx,.xls" />
+    <div class="excel-container">
+        <input class="excel-input" type="file" @change="handleFileUpload" accept=".xlsx,.xls" />
     </div>
 </template>
 
@@ -50,3 +50,14 @@ const handleFileUpload = async (event: Event) => {
 };
 
 </script>
+
+<style scoped>
+
+.excel-container {
+    margin-bottom: 5px;
+}
+
+.excel-input {
+
+}
+</style>

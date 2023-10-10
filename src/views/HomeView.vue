@@ -23,14 +23,14 @@
             
         </div>
         <div class="right">
-            <div>
+            <div class="right-actions">
                 <ExcelReader/>
-                <button @click="deleteAndReload">Delete Contacts</button>
                 <div v-if="progressState" class="progress">{{progressState}}</div>
-            </div>
-            <div>
-                <textarea name="message" id="message" cols="30" rows="10" v-model="message"></textarea>
-                <button class="send" @click="handleSendMessage(contacts, message)">Enviar</button>
+                <div class="message-input">
+                    <textarea name="message" id="message" cols="30" rows="10" v-model="message"></textarea>
+                    <button class="send" @click="handleSendMessage(contacts, message)">Enviar</button>
+                </div>
+                <button class="button-delete" @click="deleteAndReload">Eliminar Contactos</button>
             </div>
         </div>
     </div>
@@ -43,23 +43,41 @@ import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexed
 import ExcelReader from "@/components/ExcelReader.vue";
 import { createPredicate } from "@/utils/logic";
 import { handleSendMessage } from "@/utils/handleSendMessage";
+import Swal from "sweetalert2";
 
 const contacts = ref<Contact[]>([])
-const properties = ref<string[]>([])
+const properties = ref<string[]>(['nombre', 'numero'])
 
 onMounted(() => IDBTransactionGetContacts().then(response => {
     contacts.value = response
 
-    properties.value = Object.keys(response.reduce((acum, current) => {
+    const keys = Object.keys(response.reduce((acum, current) => {
         return {...acum, ...current}
     }, {})).filter(k => k !== "id")
+    if (keys.length > 0) properties.value = keys
 
     properties.value.forEach(prop => filters[prop] = "")
 }))
 
 const progressState = ref("")
 
-const deleteAndReload = () => IDBTransactionDeleteContacts().then(() => location.reload())
+const deleteAndReload = () => Swal.fire({
+    title: '¿Seguro que querés eliminar toda la base de datos de clientes?',
+    showCancelButton: true,
+    confirmButtonText: 'Aceptar',
+    cancelButtonText: `Cancelar`,
+})
+    .then((result) => {
+        if (result.isConfirmed) {
+            IDBTransactionDeleteContacts()
+                .then(() => Swal.fire('Se eliminaron todos los clientes', '', 'success'))
+                .then(() => location.reload())
+                .catch(() => Swal.fire('Hubo un error al eliminar la base de datos', '', 'error'))
+
+        } else if (result.isDenied) {
+            Swal.fire('Changes are not saved', '', 'info')
+        }
+    })
 
 const filters = reactive<Contact>({nombre: "", numero: 0, id: 0})
 
@@ -76,46 +94,50 @@ const message = ref("")
 </script>
 
 <style scoped>
+button {
+    border-radius: 5px;
+    padding: 1px;
+}
 .home {
     background: lightblue;
     height: 100vh;
     width: 100vw;
     display: flex;
-    justify-content: space-between;
 }
 
 .left {
-    background: lightgrey;
-    border-right: 1px solid black;
+    background: #FDFDF9;
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
 }
 
-.right {
-    background: whitesmoke;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
 
 .contact {
-    border: 1px solid blue;
     border-radius: 5px;
     margin: 2px;
     padding: 5px;
 }
 
 .search {
-    background: grey;
+    background: #F5F5DC;
     display: flex;
     justify-content: space-between;
 }
 
 .search-input {
     display: flex;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    padding: 4px;
+}
+
+.search-input span {
+    margin: 0 3px 0 0;
+}
+.search-input input {
+    border-radius: 5px;
+    max-width: 100px;
 }
 
 .progress {
@@ -123,7 +145,9 @@ const message = ref("")
 }
 
 .send {
-    display: block;
+    position: absolute;
+    top: 0;
+    margin: 0 5px;
 }
 .columns {
     display: flex;
@@ -131,5 +155,30 @@ const message = ref("")
 
 .property {
     text-align: left;
+}
+
+.right {
+    background: #F9FDFD;
+    width: 75%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0 0 5px;
+}
+
+.message-input {
+    position: relative;
+    width: 100%;
+}
+
+.message-input textarea {
+    width: 80%;
+    font-family: 'Arial', sans-serif; /* Change 'Arial' to your preferred font */
+    font-size: 1.1rem; /* Adjust size as needed */
+    font-weight: normal; /* Change to bold, italic, etc., if needed */
+}
+
+.button-delete {
+    margin-top: 5px
 }
 </style>
