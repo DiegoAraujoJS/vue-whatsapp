@@ -139,7 +139,7 @@ const message = ref("")
 }
 
 .right {
-    background: #F9FDFD;
+    background: #FDFDF9;
     width: 75%;
     height: 100%;
     display: flex;
