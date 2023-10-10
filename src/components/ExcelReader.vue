@@ -1,12 +1,16 @@
 <template>
-    <div class="excel-container">
+    <div class="load-contacts">
+        <div>Cargar Contactos</div>
         <input class="excel-input" type="file" @change="handleFileUpload" accept=".xlsx,.xls" />
+        <button class="button-delete" @click="deleteAndReload">Eliminar Contactos</button>
     </div>
 </template>
 
 <script lang="ts" setup>
+import { IDBTransactionDeleteContacts } from '@/indexedDB/queries';
 import { fillWhatsappDatabaseAndAlterIfNecessary } from '@/indexedDB/resolver';
 import type { Contact } from '@/types/row';
+import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
 const readExcel = (file: File): Promise<Contact[]> => {
     return new Promise((resolve: (results: any) => void, reject) => {
@@ -49,15 +53,44 @@ const handleFileUpload = async (event: Event) => {
     }
 };
 
+const deleteAndReload = () => Swal.fire({
+    title: '¿Seguro que querés eliminar toda la base de datos de clientes?',
+    showCancelButton: true,
+    confirmButtonText: 'Aceptar',
+    cancelButtonText: `Cancelar`,
+})
+    .then((result) => {
+        if (result.isConfirmed) {
+            IDBTransactionDeleteContacts()
+                .then(() => Swal.fire('Se eliminaron todos los clientes', '', 'success'))
+                .then(() => location.reload())
+                .catch(() => Swal.fire('Hubo un error al eliminar la base de datos', '', 'error'))
+
+        } else if (result.isDenied) {
+            Swal.fire('Changes are not saved', '', 'info')
+        }
+    })
+
 </script>
 
 <style scoped>
 
-.excel-container {
-    margin-bottom: 5px;
+.load-contacts {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
+    grid-row-start: 2;
 }
 
-.excel-input {
-
+.load-contacts button {
+    grid-column: 2;
+    grid-row: 2;
+    width: fit-content;
 }
+
+.load-contacts input {
+    grid-column: 1;
+    grid-row: 2
+}
+
 </style>

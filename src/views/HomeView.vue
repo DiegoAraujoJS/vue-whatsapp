@@ -30,7 +30,6 @@
                     <textarea name="message" id="message" cols="30" rows="10" v-model="message"></textarea>
                     <button class="send" @click="handleSendMessage(contacts, message)">Enviar</button>
                 </div>
-                <button class="button-delete" @click="deleteAndReload">Eliminar Contactos</button>
             </div>
         </div>
     </div>
@@ -43,7 +42,6 @@ import {IDBTransactionGetContacts, IDBTransactionDeleteContacts} from "@/indexed
 import ExcelReader from "@/components/ExcelReader.vue";
 import { createPredicate } from "@/utils/logic";
 import { handleSendMessage } from "@/utils/handleSendMessage";
-import Swal from "sweetalert2";
 
 const contacts = ref<Contact[]>([])
 const properties = ref<string[]>(['nombre', 'numero'])
@@ -61,24 +59,6 @@ onMounted(() => IDBTransactionGetContacts().then(response => {
 
 const progressState = ref("")
 
-const deleteAndReload = () => Swal.fire({
-    title: '¿Seguro que querés eliminar toda la base de datos de clientes?',
-    showCancelButton: true,
-    confirmButtonText: 'Aceptar',
-    cancelButtonText: `Cancelar`,
-})
-    .then((result) => {
-        if (result.isConfirmed) {
-            IDBTransactionDeleteContacts()
-                .then(() => Swal.fire('Se eliminaron todos los clientes', '', 'success'))
-                .then(() => location.reload())
-                .catch(() => Swal.fire('Hubo un error al eliminar la base de datos', '', 'error'))
-
-        } else if (result.isDenied) {
-            Swal.fire('Changes are not saved', '', 'info')
-        }
-    })
-
 const filters = reactive<Contact>({nombre: "", numero: 0, id: 0})
 
 watch([filters], () => {
@@ -94,10 +74,6 @@ const message = ref("")
 </script>
 
 <style scoped>
-button {
-    border-radius: 5px;
-    padding: 1px;
-}
 .home {
     background: lightblue;
     height: 100vh;
@@ -158,6 +134,7 @@ button {
 }
 
 .right {
+    position: relative;
     background: #F9FDFD;
     width: 75%;
     height: 100%;
@@ -168,6 +145,7 @@ button {
 
 .message-input {
     position: relative;
+    top: 10%;
     width: 100%;
 }
 
@@ -178,7 +156,4 @@ button {
     font-weight: normal; /* Change to bold, italic, etc., if needed */
 }
 
-.button-delete {
-    margin-top: 5px
-}
 </style>

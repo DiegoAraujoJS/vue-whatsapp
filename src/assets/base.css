@@ -18,3 +18,8 @@
 .align-left {
     text-align: left;
 }
+
+button {
+    border-radius: 5px;
+    padding: 1px;
+}
