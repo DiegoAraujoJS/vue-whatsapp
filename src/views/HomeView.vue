@@ -23,20 +23,22 @@
             
         </div>
         <div class="right">
-            <div class="right-actions">
-                <ExcelReader/>
-                <div v-if="progressState" class="progress">{{progressState}}</div>
-                <div class="message-input">
-                    <textarea name="message" id="message" cols="30" rows="10" v-model="message"></textarea>
-                    <div class="send">
-                        <button @click="handleSendMessage(contacts, message)">Enviar</button>
-                        <button class="info-button" @click="renderInstructions({
-                            title: 'Enviá mensajes múltiples a tus contactos',
-                            instructions: 'Al tocar \'Enviar\', se va a ir enviando el mensaje que escribiste en el campo a todos los contactos que filtraste a la izquierda. Un ícono a la derecha de cada contacto indica si el envío fue exitoso.'
-                        })">i</button>
-                    </div>
+            <ExcelReader/>
+            <div v-if="progressState" class="progress">{{progressState}}</div>
+            <div class="message-input">
+                <textarea name="message" id="message" cols="30" rows="10" v-model="message"></textarea>
+                <div class="send">
+                    <button @click="handleSendMessage(contacts, message)">Enviar</button>
+                    <button class="info-button" @click="renderInstructions({
+                        title: 'Enviá mensajes múltiples a tus contactos',
+                        instructions: 'Al tocar \'Enviar\', se va a ir enviando el mensaje que escribiste en el campo a todos los contactos que filtraste a la izquierda. Un ícono a la derecha de cada contacto indica si el envío fue exitoso.'
+                    })">i</button>
                 </div>
             </div>
+            <div class="whatsapp-config">
+                <button @click="deleteWhatsappConfiguration">Borrar Configuración</button>
+            </div>
+
         </div>
     </div>
 </template>
@@ -49,6 +51,7 @@ import ExcelReader from "@/components/ExcelReader.vue";
 import { createPredicate } from "@/utils/logic";
 import { handleSendMessage } from "@/utils/handleSendMessage";
 import { renderInstructions } from "@/utils/instructions";
+import Swal from "sweetalert2";
 
 const contacts = ref<Contact[]>([])
 const properties = ref<string[]>(['nombre', 'numero'])
@@ -77,6 +80,18 @@ watch([filters], () => {
 })
 
 const message = ref("")
+
+function deleteWhatsappConfiguration () {
+    const [whatsappPhoneId, whatsappToken] = [localStorage.getItem('whatsappPhoneId'), localStorage.getItem('whatsappToken')]
+    return Swal.fire('Eliminar configuración',`phone id: ${whatsappPhoneId}<br/>Token: ${whatsappToken} <br/> Estás por eliminar la configuración de Whatsapp Business.`, "warning")
+        .then(result => {
+            if (result.isConfirmed){
+                localStorage.removeItem('whatsappPhoneId')
+                localStorage.removeItem('whatsappToken')
+                return Swal.fire('Se eliminó la configuración de WhatsApp Business', '', 'success')
+            }
+        })
+}
 
 </script>
 
@@ -142,16 +157,15 @@ const message = ref("")
     background: #FDFDF9;
     width: 75%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
+    display: grid;
     padding: 4px 0 0 5px;
+    grid-template-rows: repeat(14, 1fr)
 }
 
 .message-input {
-    position: relative;
     display: flex;
-    top: 10%;
     width: 100%;
+    grid-row: 3;
 }
 
 .message-input textarea {
@@ -159,6 +173,10 @@ const message = ref("")
     font-family: 'Arial', sans-serif; /* Change 'Arial' to your preferred font */
     font-size: 1.1rem; /* Adjust size as needed */
     font-weight: normal; /* Change to bold, italic, etc., if needed */
+}
+
+.whatsapp-config {
+    grid-row: 5;
 }
 
 </style>

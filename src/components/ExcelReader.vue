@@ -108,7 +108,7 @@ Debe haber al menos las columnas de nombre y numero para que se puedan cargar lo
     display: grid;
     grid-template-rows: 1fr 1fr;
     grid-template-columns: 1fr 1fr;
-    grid-row-start: 2;
+    grid-row: 1;
 }
 
 .load-contacts button {
