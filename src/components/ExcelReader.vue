@@ -46,17 +46,19 @@ const handleFileUpload = async (event: Event) => {
     const files = target.files;
     if (files && files.length > 0) {
         const file = files[0];
-        try {
-            const array = await readExcel(file);
-            const keys = Object.keys(array[0]).filter(k => k !== "__rowNum__")
-            console.log(keys)
-            if (!keys.includes("nombre") || !keys.includes("numero")) throw new Error("Faltan la propiedad 'nombre' o la propiedad 'numero'")
-            if (array.length) await fillWhatsappDatabaseAndAlterIfNecessary(keys, array)
-            location.reload()
-            console.log(array);
-        } catch (error) {
-            console.error(error);
-        }
+        return readExcel(file)
+            .then(array => {
+                let acum: {[k: string]: any} = {}
+                for (const contact of array) {
+                    const contactKeys = Object.keys(contact)
+                    if (!contactKeys.includes("nombre") || !contactKeys.includes("numero")) throw new Error(`Falta la propiedad 'nombre' o la propiedad 'numero' en el contacto ${JSON.stringify(contact)}`)
+                    acum = {...acum, ...contact}
+                }
+                let keys = Object.keys(acum)
+                if (array.length) return fillWhatsappDatabaseAndAlterIfNecessary(keys, array)
+                location.reload()
+            })
+            .catch(error => Swal.fire('Error al cargar contactos',(error as Error).message, 'error'))
     }
 };
 
